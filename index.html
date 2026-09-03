@@ -39,8 +39,9 @@
     align-items: baseline;
     gap: 0.9rem;
     padding: 0.85rem 1.2rem;
-    background: linear-gradient(to bottom, rgba(18,17,15,0.92), rgba(18,17,15,0));
     pointer-events: none;
+    mix-blend-mode: difference;
+    color: #fff;
   }
   header .title {
     font-size: 1.05rem;
@@ -111,9 +112,10 @@
     padding: 0.6rem 1.2rem;
     font-size: 0.85rem;
     color: var(--ghosted);
-    background: linear-gradient(to top, rgba(18,17,15,0.85), rgba(18,17,15,0));
     pointer-events: none;
     text-align: right;
+    mix-blend-mode: difference;
+    color: #fff;
   }
 
   /* OSD control buttons live bottom-left by default; keep them subtle */
@@ -170,15 +172,16 @@
       id: "viewer",
       prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@6.1.0/build/openseadragon/images/",
       tileSources: { type: "image", url: cacheBusted(IMAGE) },
+      showNavigationControl: false,
       showNavigator: true,
-      navigatorPosition: "BOTTOM_RIGHT",
+      navigatorPosition: "BOTTOM_LEFT",
       navigatorAutoFade: true,
       gestureSettingsMouse: { clickToZoom: false },
       // --- keep the image flush, no floating past its edges ---
       minZoomImageRatio: 1,      // can't zoom out smaller than fit
       maxZoomPixelRatio: 4,
       visibilityRatio: 1,        // edges always stay against the frame
-      homeFillsViewer: false,    // fit whole canvas (letterbox), don't crop
+      homeFillsViewer: true,    // fit whole canvas (letterbox), don't crop
       constrainDuringPan: true,  // lock while dragging, not just after
       animationTime: 0.6,
       springStiffness: 7,
