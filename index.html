@@ -197,8 +197,10 @@
 
     viewer.addHandler("open", () => stateEl.classList.add("hidden"));
     viewer.addHandler("open", () => {
-      viewer.viewport.fitBounds(
-        new OpenSeadragon.Rect(0, 0, 1, 9/16),
+      viewer.viewport.fitHorizontally(true);
+      const vb = viewer.viewport.getBounds();
+      viewer.viewport.panTo(
+        new OpenSeadragon.Point(0.5, vb.height / 2),
         true
       );
     });
