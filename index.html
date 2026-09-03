@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Live canvas</title>
+<style>
+  :root {
+    --ink: #12110f;
+    --ink-soft: #1c1a17;
+    --line: #33302b;
+    --paper: #e8e2d4;
+    --paper-dim: #8f887a;
+    --accent: #c8683d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    overflow: hidden;
+  }
+
+  #viewer {
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+  }
+
+  /* Header strip — quiet, sits over the canvas */
+  header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 5;
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    padding: 0.85rem 1.2rem;
+    background: linear-gradient(to bottom, rgba(18,17,15,0.92), rgba(18,17,15,0));
+    pointer-events: none;
+  }
+  header .title {
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    color: var(--paper);
+  }
+  header .hint {
+    font-size: 0.82rem;
+    color: var(--paper-dim);
+    font-style: italic;
+  }
+  header .live {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--paper-dim);
+    text-transform: lowercase;
+  }
+  header .live::before {
+    content: "";
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(200,104,61,0.6);
+    animation: pulse 2.4s ease-out infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(200,104,61,0.55); }
+    70%  { box-shadow: 0 0 0 7px rgba(200,104,61,0); }
+    100% { box-shadow: 0 0 0 0 rgba(200,104,61,0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    header .live::before { animation: none; }
+  }
+
+  /* Loading / offline state */
+  #state {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    background: var(--ink);
+    text-align: center;
+    padding: 2rem;
+    transition: opacity 0.4s ease;
+  }
+  #state.hidden { opacity: 0; pointer-events: none; }
+  #state .mark {
+    font-size: 2rem;
+    color: var(--line);
+    letter-spacing: 0.3em;
+  }
+  #state .msg { color: var(--paper-dim); font-size: 0.95rem; }
+
+  /* Footer note */
+  footer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 5;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    background: linear-gradient(to top, rgba(18,17,15,0.85), rgba(18,17,15,0));
+    pointer-events: none;
+    text-align: right;
+  }
+
+  /* OSD control buttons live bottom-left by default; keep them subtle */
+  .openseadragon-container { background: var(--ink) !important; }
+</style>
+</head>
+<body>
+  <header>
+    <span class="title">The canvas</span>
+    <span class="hint">drag to move · scroll to zoom</span>
+    <span class="live">live</span>
+  </header>
+
+  <div id="viewer"></div>
+
+  <div id="state">
+    <div class="mark">· · ·</div>
+    <div class="msg">Loading the canvas…</div>
+  </div>
+
+  <footer>Work in progress — please don't repost without credit.</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/openseadragon@6.1.0/build/openseadragon/openseadragon.min.js"></script>
+  <script>
+    // ---- config ----
+    const IMAGE = "canvas.png";     // the file you overwrite when you update
+    const REFRESH_MS = 20000;       // how often to check for a new version (20s)
+    // -----------------
+
+    const stateEl = document.getElementById("state");
+    const stateMsg = stateEl.querySelector(".msg");
+
+    let viewer = OpenSeadragon({
+      id: "viewer",
+      prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@6.1.0/build/openseadragon/images/",
+      tileSources: { type: "image", url: cacheBusted(IMAGE) },
+      showNavigator: true,
+      navigatorPosition: "BOTTOM_RIGHT",
+      navigatorAutoFade: true,
+      gestureSettingsMouse: { clickToZoom: false },
+      minZoomImageRatio: 0.6,
+      maxZoomPixelRatio: 4,
+      visibilityRatio: 0.85,
+      constrainDuringPan: true,
+      animationTime: 0.6,
+      springStiffness: 7,
+      immediateRender: true,
+      preserveViewport: true    // keep the user's pan/zoom across refreshes
+    });
+
+    viewer.addHandler("open", () => stateEl.classList.add("hidden"));
+    viewer.addHandler("open-failed", showOffline);
+
+    function cacheBusted(url) {
+      return url + "?v=" + Date.now();
+    }
+
+    function showOffline() {
+      stateEl.classList.remove("hidden");
+      stateEl.querySelector(".mark").textContent = "—";
+      stateMsg.textContent = "The canvas is offline right now. Check back during a stream.";
+    }
+
+    // Poll for an updated image. Only swap if the file actually changed,
+    // so the viewer isn't reset while nothing is new.
+    let lastTag = null;
+    async function checkForUpdate() {
+      try {
+        const res = await fetch(cacheBusted(IMAGE), { method: "HEAD" });
+        if (!res.ok) return;
+        const tag = res.headers.get("etag") || res.headers.get("last-modified");
+        if (tag && tag !== lastTag) {
+          if (lastTag !== null) swapImage();  // don't reswap on first load
+          lastTag = tag;
+        }
+      } catch (e) { /* offline; ignore */ }
+    }
+
+    function swapImage() {
+      // Remember where the viewer is looking, reopen, restore it.
+      const vp = viewer.viewport;
+      const center = vp.getCenter();
+      const zoom = vp.getZoom();
+      viewer.addOnceHandler("open", () => {
+        viewer.viewport.zoomTo(zoom, null, true);
+        viewer.viewport.panTo(center, true);
+      });
+      viewer.open({ type: "image", url: cacheBusted(IMAGE) });
+    }
+
+    setInterval(checkForUpdate, REFRESH_MS);
+  </script>
+</body>
+</html>
