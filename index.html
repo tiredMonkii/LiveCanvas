@@ -48,9 +48,10 @@
     color: var(--paper);
   }
   header .hint {
-    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     color: var(--paper-dim);
-    font-style: italic;
   }
   header .live {
     margin-left: auto;
@@ -108,7 +109,7 @@
     bottom: 0; left: 0; right: 0;
     z-index: 5;
     padding: 0.6rem 1.2rem;
-    font-size: 0.72rem;
+    font-size: 0.85rem;
     color: var(--paper-dim);
     background: linear-gradient(to top, rgba(18,17,15,0.85), rgba(18,17,15,0));
     pointer-events: none;
@@ -117,12 +118,31 @@
 
   /* OSD control buttons live bottom-left by default; keep them subtle */
   .openseadragon-container { background: var(--ink) !important; }
+
+  /* Navigator (corner overview) — force 16:9 and give it a quiet frame */
+  .navigator {
+    width: 192px !important;
+    height: 108px !important;
+    border: 1px solid var(--line) !important;
+    background: var(--ink-soft) !important;
+    margin: 0 0.9rem 2.4rem 0 !important;
+    border-radius: 2px;
+  }
+  .navigator .displayregion {
+    border: 1px solid var(--accent) !important;
+  }
 </style>
 </head>
 <body>
   <header>
+    <!-- EDIT THE TITLE HERE -->
     <span class="title">The canvas</span>
-    <span class="hint">drag to move · scroll to zoom</span>
+    <span class="hint" aria-label="drag to move, scroll to zoom">
+      <!-- drag icon -->
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>
+      <!-- zoom icon -->
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M8 10.5h5M10.5 8v5"/></svg>
+    </span>
     <span class="live">live</span>
   </header>
 
@@ -133,7 +153,8 @@
     <div class="msg">Loading the canvas…</div>
   </div>
 
-  <footer>Work in progress — please don't repost without credit.</footer>
+  <!-- EDIT THE FOOTER TEXT HERE -->
+  <footer>Work in progress — please don't repost without permission and credit.</footer>
 
   <script src="https://cdn.jsdelivr.net/npm/openseadragon@6.1.0/build/openseadragon/openseadragon.min.js"></script>
   <script>
@@ -153,10 +174,12 @@
       navigatorPosition: "BOTTOM_RIGHT",
       navigatorAutoFade: true,
       gestureSettingsMouse: { clickToZoom: false },
-      minZoomImageRatio: 0.6,
+      // --- keep the image flush, no floating past its edges ---
+      minZoomImageRatio: 1,      // can't zoom out smaller than fit
       maxZoomPixelRatio: 4,
-      visibilityRatio: 0.85,
-      constrainDuringPan: true,
+      visibilityRatio: 1,        // edges always stay against the frame
+      homeFillsViewer: false,    // fit whole canvas (letterbox), don't crop
+      constrainDuringPan: true,  // lock while dragging, not just after
       animationTime: 0.6,
       springStiffness: 7,
       immediateRender: true,
