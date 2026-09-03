@@ -196,6 +196,12 @@
     });
 
     viewer.addHandler("open", () => stateEl.classList.add("hidden"));
+    viewer.addHandler("open", () => {
+      viewer.viewport.fitBounds(
+        new OpenSeadragon.Rect(0, 0, 1, 9/16),
+        true
+      );
+    });
     viewer.addHandler("open-failed", showOffline);
 
     function cacheBusted(url) {
